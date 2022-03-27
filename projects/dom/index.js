@@ -10,7 +10,11 @@
  Пример:
    createDivWithText('loftschool') // создаст элемент div, поместит в него 'loftschool' и вернет созданный элемент
  */
-function createDivWithText(text) {}
+function createDivWithText(text) {
+  const divObj = document.createElement('div');
+  divObj.textContent = text;
+  return divObj;
+}
 
 /*
  Задание 2:
@@ -20,7 +24,9 @@ function createDivWithText(text) {}
  Пример:
    prepend(document.querySelector('#one'), document.querySelector('#two')) // добавит элемент переданный первым аргументом в начало элемента переданного вторым аргументом
  */
-function prepend(what, where) {}
+function prepend(what, where) {
+  where.insertBefore(what, where.firstChild);
+}
 
 /*
  Задание 3:
@@ -41,7 +47,16 @@ function prepend(what, where) {}
 
    findAllPSiblings(document.body) // функция должна вернуть массив с элементами div и span т.к. следующим соседом этих элементов является элемент с тегом P
  */
-function findAllPSiblings(where) {}
+function findAllPSiblings(where) {
+  const mas = [];
+  for (const obj of where.childNodes) {
+    const nextObj = obj.nextSibling;
+    if (nextObj && nextObj.nodeName === 'P') {
+      mas.push(obj);
+    }
+  }
+  return mas;
+}
 
 /*
  Задание 4:
@@ -64,7 +79,9 @@ function findError(where) {
   const result = [];
 
   for (const child of where.childNodes) {
-    result.push(child.textContent);
+    if (child.nodeType === 1) {
+      result.push(child.textContent);
+    }
   }
 
   return result;
@@ -82,7 +99,13 @@ function findError(where) {
    После выполнения функции, дерево <div></div>привет<p></p>loftchool!!!
    должно быть преобразовано в <div></div><p></p>
  */
-function deleteTextNodes(where) {}
+function deleteTextNodes(where) {
+  for (const obj of where.childNodes) {
+    if (obj.nodeType === 3) {
+      obj.remove();
+    }
+  }
+}
 
 /*
  Задание 6:
@@ -95,7 +118,18 @@ function deleteTextNodes(where) {}
    После выполнения функции, дерево <span> <div> <b>привет</b> </div> <p>loftchool</p> !!!</span>
    должно быть преобразовано в <span><div><b></b></div><p></p></span>
  */
-function deleteTextNodesRecursive(where) {}
+function deleteTextNodesRecursive(where) {
+  for (let i = 0; i < where.childNodes.length; ) {
+    const obj = where.childNodes[i];
+    if (obj.nodeType === 1) {
+      deleteTextNodesRecursive(obj);
+      i++;
+    }
+    if (obj.nodeType === 3) {
+      obj.remove();
+    }
+  }
+}
 
 /*
  Задание 7 *:
@@ -117,7 +151,40 @@ function deleteTextNodesRecursive(where) {}
      texts: 3
    }
  */
-function collectDOMStat(root) {}
+function collectDOMStat(root) {
+  const stat = {
+    tags: {},
+    classes: {},
+    texts: 0,
+  };
+  function mergeStat(root, node) {
+    root.texts += node.texts;
+    for (const tag in node.tags) {
+      if (tag in root.tags) root.tags[tag] += node.tags[tag];
+      else root.tags[tag] = node.tags[tag];
+    }
+    for (const cl in node.classes) {
+      if (cl in root.classes) root.classes[cl] += node.classes[cl];
+      else root.classes[cl] = node.classes[cl];
+    }
+  }
+  for (const obj of root.childNodes) {
+    if (obj.nodeType === 1) {
+      if (obj.nodeName in stat.tags) stat.tags[obj.nodeName]++;
+      else stat.tags[obj.nodeName] = 1;
+      for (const cl of obj.classList) {
+        if (cl in stat.classes) stat.classes[cl]++;
+        else stat.classes[cl] = 1;
+      }
+      const nodeStat = collectDOMStat(obj);
+      mergeStat(stat, nodeStat);
+    }
+    if (obj.nodeType === 3) {
+      stat['texts']++;
+    }
+  }
+  return stat;
+}
 
 /*
  Задание 8 *:
@@ -151,7 +218,21 @@ function collectDOMStat(root) {}
      nodes: [div]
    }
  */
-function observeChildNodes(where, fn) {}
+function observeChildNodes(where, fn) {
+  const functionObserver = function (cahnges) {
+    for (const change of cahnges) {
+      if (change.type === 'childList') {
+        if (change.addedNodes.length) {
+          fn({ type: 'insert', nodes: [...change.addedNodes] });
+        } else {
+          fn({ type: 'remove', nodes: [...change.removedNodes] });
+        }
+      }
+    }
+  };
+  const observer = new MutationObserver(functionObserver);
+  observer.observe(where, { attributes: true, childList: true, subtree: true });
+}
 
 export {
   createDivWithText,
