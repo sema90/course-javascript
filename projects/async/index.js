@@ -30,6 +30,7 @@
  */
 
 import './towns.html';
+import { loadAndSortTowns } from './functions';
 
 const homeworkContainer = document.querySelector('#app');
 
@@ -39,7 +40,9 @@ const homeworkContainer = document.querySelector('#app');
  Массив городов пожно получить отправив асинхронный запрос по адресу
  https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json
  */
-function loadTowns() {}
+function loadTowns() {
+  return loadAndSortTowns();
+}
 
 /*
  Функция должна проверять встречается ли подстрока chunk в строке full
@@ -52,7 +55,9 @@ function loadTowns() {}
    isMatching('Moscow', 'SCO') // true
    isMatching('Moscow', 'Moscov') // false
  */
-function isMatching(full, chunk) {}
+function isMatching(full, chunk) {
+  return full.toLowerCase().includes(chunk.toLowerCase());
+}
 
 /* Блок с надписью "Загрузка" */
 const loadingBlock = homeworkContainer.querySelector('#loading-block');
@@ -67,8 +72,43 @@ const filterInput = homeworkContainer.querySelector('#filter-input');
 /* Блок с результатами поиска */
 const filterResult = homeworkContainer.querySelector('#filter-result');
 
-retryButton.addEventListener('click', () => {});
+retryButton.addEventListener('click', () => {
+  loadLTownsList();
+});
 
-filterInput.addEventListener('input', function () {});
+filterInput.addEventListener('input', function () {
+  filterTownsList(this.value);
+});
+
+let towns = [];
+async function loadLTownsList() {
+  try {
+    towns = await loadTowns();
+    loadingBlock.classList.add('hidden');
+    loadingFailedBlock.classList.add('hidden');
+    filterBlock.classList.remove('hidden');
+  } catch (e) {
+    loadingBlock.classList.add('hidden');
+    loadingFailedBlock.classList.remove('hidden');
+    filterBlock.classList.add('hidden');
+  }
+}
+
+function filterTownsList(value) {
+  filterResult.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  for (const town of towns) {
+    if (value && isMatching(town.name, value)) {
+      const divObj = document.createElement('div');
+      divObj.textContent = town.name;
+      fragment.append(divObj);
+    }
+  }
+  filterResult.append(fragment);
+}
+
+loadingFailedBlock.classList.add('hidden');
+filterBlock.classList.add('hidden');
+loadLTownsList();
 
 export { loadTowns, isMatching };
