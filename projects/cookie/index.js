@@ -45,8 +45,84 @@ const addButton = homeworkContainer.querySelector('#add-button');
 // таблица со списком cookie
 const listTable = homeworkContainer.querySelector('#list-table tbody');
 
-filterNameInput.addEventListener('input', function () {});
+const cookies = getCookies();
+let filter = '';
 
-addButton.addEventListener('click', () => {});
+function getCookies() {
+  return document.cookie
+    .split('; ')
+    .filter(Boolean)
+    .map((cookie) => cookie.match(/^([^=]+)=(.+)/))
+    .reduce((obj, [, name, value]) => {
+      obj.set(name, value);
 
-listTable.addEventListener('click', (e) => {});
+      return obj;
+    }, new Map());
+}
+
+function update() {
+  const fragment = document.createDocumentFragment();
+  let count = 0;
+  listTable.innerHTML = '';
+
+  for (const [k, v] of cookies) {
+    if (
+      filter &&
+      !k.toLowerCase().includes(filter) &&
+      !v.toLowerCase().includes(filter)
+    ) {
+      continue;
+    }
+    ++count;
+
+    const tr = document.createElement('tr');
+    const nameTd = document.createElement('td');
+    const valueTd = document.createElement('td');
+    const removeTd = document.createElement('td');
+    const removeBtn = document.createElement('button');
+
+    removeBtn.dataset.role = 'remove-cookie';
+    removeBtn.dataset.cookieName = k;
+    removeBtn.textContent = 'удалить';
+    nameTd.textContent = k;
+    valueTd.textContent = v;
+    valueTd.classList.add('value');
+    removeTd.append(removeBtn);
+    tr.append(nameTd, valueTd, removeTd);
+    fragment.append(tr);
+  }
+
+  if (count > 0) {
+    listTable.classList.remove('hidden');
+    listTable.append(fragment);
+  } else {
+    listTable.classList.add('hidden');
+  }
+}
+
+filterNameInput.addEventListener('input', function () {
+  filter = this.value;
+  update();
+});
+
+addButton.addEventListener('click', () => {
+  const name = encodeURIComponent(addNameInput.value.trim());
+  const value = encodeURIComponent(addValueInput.value.trim());
+  if (!name) {
+    return;
+  }
+  document.cookie = `${name}=${value}`;
+  cookies.set(name, value);
+  update();
+});
+
+listTable.addEventListener('click', (e) => {
+  const { role, cookieName } = e.target.dataset;
+  if (role === 'remove-cookie') {
+    cookies.delete(cookieName);
+    document.cookie = `${cookieName}=deleted; max-age=0`;
+    update();
+  }
+});
+
+update();
